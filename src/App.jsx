@@ -1,20 +1,61 @@
-import React, { Component } from 'react';
-import Amplify from 'aws-amplify';
-import { Authenticator } from 'aws-amplify-react';
- 
-Amplify.configure({
-  Auth: {
-    identityPoolId: 'us-east-1:6317760e-ae25-4c71-9901-855dd1d9c435', //REQUIRED - Amazon Cognito Identity Pool ID
-    region: 'us-east-1', // REQUIRED - Amazon Cognito Region
-    userPoolId: 'us-east-1_VpFb4U9MM', //OPTIONAL - Amazon Cognito User Pool ID
-    userPoolWebClientId: '21mafgufsmc9m94kp7jlqemp0d', //OPTIONAL - Amazon Cognito Web Client ID
+import React, { Component } from "react";
+import { Link } from "react-router-dom";
+import { Navbar, Nav } from "react-bootstrap";
+import Routes from "./Routes";
+import RouteNavItem from "./components/RouteNavItem";
+import { getAuthInfo } from "./helper";
+
+class App extends Component {
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      authenticated: false,
+      username: ""
+    };
   }
-});
- 
-class AppWithAuth extends Component {
+  async componentDidMount() {
+    const info = await getAuthInfo();
+
+    if (info.currentUserInfo) {
+      this.setState({
+        authenticated: true,
+        username: info.currentUserInfo.username
+          ? info.currentUserInfo.username
+          : info.currentUserInfo.name
+      });
+    } else {
+      this.setState({ authenticated: false, username: null });
+    }
+  }
   render() {
-    return <Authenticator />
+    return (
+      <div className="App container">
+        <Navbar fluid collapseOnSelect>
+          <Navbar.Header>
+            <Navbar.Brand>
+              <Link to="/">Home</Link>
+            </Navbar.Brand>
+            <Navbar.Toggle />
+          </Navbar.Header>
+          <Navbar.Collapse>
+            {this.state.authenticated ? (
+              <Nav pullRight>
+                <RouteNavItem href="/a">
+                  Member Page{`(${this.state.username})`}
+                </RouteNavItem>
+              </Nav>
+            ) : (
+              <Nav pullRight>
+                <RouteNavItem href="/a">Member Page</RouteNavItem>
+              </Nav>
+            )}
+          </Navbar.Collapse>
+        </Navbar>
+        <Routes />
+      </div>
+    );
   }
 }
- 
-export default AppWithAuth;
+
+export default App;

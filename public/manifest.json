@@ -1,6 +1,6 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "Cognito SignIn Sample",
+  "name": "Cognito SignIn Sample",
   "icons": [
     {
       "src": "favicon.ico",
