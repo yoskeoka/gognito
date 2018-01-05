@@ -13,13 +13,13 @@ const WithAuth = withAuthenticator(
       <Route component={NotFound} />
     </Switch>
   ),
-  { includeGreetings: true }
+  { includeGreetings: false }
 );
 
+// Cognito Federated IdentitiesでのGoogleとFacebook統合にしか上手く対応しないので今回は使わない
 const federated = {
-  google_client_id:
-    "469604330843-bc50a8adc8v1a9sqfgrpadfp5s4isid1.apps.googleusercontent.com",
-  facebook_app_id: "1726717330712363",
+  // google_client_id: "",
+  // facebook_app_id: "",
   amazon_client_id: ""
 };
 

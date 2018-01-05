@@ -83,7 +83,13 @@ alphanum-sort@^1.0.1, alphanum-sort@^1.0.2:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/alphanum-sort/-/alphanum-sort-1.0.2.tgz#97a1119649b211ad33691d9f9f486a8ec9fbe0a3"
 
-amazon-cognito-identity-js@^1.19.0, amazon-cognito-identity-js@^1.29.0:
+amazon-cognito-auth-js@^1.1.1:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/amazon-cognito-auth-js/-/amazon-cognito-auth-js-1.1.1.tgz#e90452facf77cdd1d63ea7b39a62df8a53852e1c"
+  dependencies:
+    aws-sdk "^2.6.0"
+
+amazon-cognito-identity-js@^1.19.0:
   version "1.29.0"
   resolved "https://registry.yarnpkg.com/amazon-cognito-identity-js/-/amazon-cognito-identity-js-1.29.0.tgz#bf1180a846b642e4aece3d970566d44e470c8162"
   dependencies:
