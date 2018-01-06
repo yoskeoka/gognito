@@ -185,10 +185,10 @@ func validateGoogleJwtClaims(claims jwt.MapClaims) error {
 }
 
 func validateClaimItem(key string, keyShouldBe []string, claims jwt.MapClaims) error {
-	if iss, ok := claims[key]; ok {
-		if issStr, ok := iss.(string); ok {
-			for _, v := range keyShouldBe {
-				if issStr == v {
+	if val, ok := claims[key]; ok {
+		if valStr, ok := val.(string); ok {
+			for _, shouldbe := range keyShouldBe {
+				if valStr == shouldbe {
 					return nil
 				}
 			}
