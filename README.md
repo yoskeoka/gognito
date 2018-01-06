@@ -1,6 +1,29 @@
 # gognito
 
-golang api server + AWS cognito + Auth Web
+golang api server + AWS cognito + JWT Auth
+
+AWS Cognito User PoolとFederatedIdentities(Google+)に対応
+
+FederatedIdentities(Google+)はAWSのJWT検証手順とほぼ同じ手順なので、調べたついでに実装してあります。
+
+## 動かし方
+
+ターミナルを2つ立ち上げて、
+
+1つめ
+
+```sh
+yarn install
+yarn start
+```
+
+2つめ
+
+```sh
+cp .env.sample .env
+dep ensure
+go run main.go
+```
 
 ## 重要メモ
 
