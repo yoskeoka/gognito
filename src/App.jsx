@@ -85,8 +85,13 @@ class App extends Component {
           </div>
           : (
             <div className="buttons">
+              {/* 
+               identity_providerに使える値
+               Facebook, Google, LoginWithAmazon, 
+               */}
               <button onClick={this.handleSignIn("Google")}>Google Sign In</button>
               <button onClick={this.handleSignIn("Facebook")}>Facebook Sign In</button>
+              <button onClick={this.handleSignIn("")}>Open Cognito User Pools Sign In Page</button>
               {/* 参考リンク */}
               {/* https://docs.aws.amazon.com/ja_jp/cognito/latest/developerguide/authorization-endpoint.html */}
               <a href="https://fs-fish-test.auth.us-east-1.amazoncognito.com/authorize?response_type=code&client_id=21mafgufsmc9m94kp7jlqemp0d&identity_provider=Google&scope=openid+email+profile+aws.cognito.signin.user.admin" >Google+ Auth Link</a>
