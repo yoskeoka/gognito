@@ -25,6 +25,8 @@ dep ensure
 go run main.go
 ```
 
+[`http://localhost:3000/`](http://localhost:3000/)にアクセスする
+
 ## 重要メモ
 
 Cognito UserPool ID Token(JWT)のデコードのキーは以下のリンクを参考にした。
