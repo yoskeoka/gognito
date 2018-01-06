@@ -23,33 +23,10 @@ type res struct {
 	Text string `json:"text"`
 }
 
-var jwk map[string]JWKKey
-
-var region string
-var userPoolID string
-
-// Cognito User PoolのJWT検証は下記の手順を参照
-//https://docs.aws.amazon.com/cognito/latest/developerguide/amazon-cognito-user-pools-using-tokens-with-identity-providers.html#amazon-cognito-identity-user-pools-using-id-and-access-tokens-in-web-api
-
-// Google のJWT検証は下記の手順を参照
-// https://developers.google.com/identity/sign-in/web/backend-auth
-
 func main() {
 	loadEnv()
-	region = os.Getenv("COGNITO_REGION")
-	userPoolID = os.Getenv("COGNITO_USER_POOL_ID")
-
-	// 1. Download and store the JSON Web Key (JWK) for your user pool.
-	jwkURL := fmt.Sprintf("https://cognito-idp.%v.amazonaws.com/%v/.well-known/jwks.json", region, userPoolID)
-	fmt.Println(jwkURL)
-	jwk = getJWK(jwkURL)
-
-	// googleのJWKも一括で管理して混ぜてしまう。どうせkidは被らない
-	for key, val := range getJWK("https://www.googleapis.com/oauth2/v3/certs") {
-		jwk[key] = val
-	}
-
-	fmt.Println(jwk)
+	region := os.Getenv("COGNITO_REGION")
+	userPoolID := os.Getenv("COGNITO_USER_POOL_ID")
 
 	r := gin.Default()
 	r.Use(corsMiddleware())
@@ -59,39 +36,99 @@ func main() {
 	})
 
 	r.GET("/public", func(c *gin.Context) {
+		if token, ok := c.Get("token"); ok {
+			fmt.Println(token)
+		}
 		c.JSON(200, res{Text: "hello anonymous"})
 	})
 
-	r.GET("/member", func(c *gin.Context) {
-		tokenString, ok := getBearer(c.Request.Header["Authorization"])
-
-		if !ok {
-			// jwtがHeaderに添付されていない
-			c.JSON(401, res{Text: "Authorization Bearer Header is missing"})
-			return
+	// auth必要なリソースパスを定義するときにauthMiddlewareを使う
+	auth := r.Group("/", authMiddleware(region, userPoolID))
+	auth.GET("/member", func(c *gin.Context) {
+		token := c.MustGet("token")
+		claims := token.(*jwt.Token).Claims.(jwt.MapClaims)
+		user := make([]string, 0)
+		if email, ok := claims["email"]; ok {
+			fmt.Println(email)
+			user = append(user, email.(string))
 		}
 
-		token, err := validateToken(tokenString)
-		if err != nil {
-			// jwtの検証に失敗
+		if username, ok := claims["cognito:username"]; ok {
+			fmt.Println(username)
+			user = append(user, username.(string))
+		}
 
-			fmt.Println(err)
-			c.JSON(401, res{Text: fmt.Sprintln(err)})
-			return
-		}
-		if !token.Valid {
-			fmt.Printf("token is not valid\n%v\n", token.Claims)
-			c.JSON(401, res{Text: "token is not valid"})
-			return
-		}
-		c.JSON(200, res{Text: "hello member"})
+		c.JSON(200, res{Text: "hello member " + strings.Join(user, ", ")})
 	})
 
 	r.Run(":3100")
 }
 
+// cors許可
+func corsMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, UPDATE, OPTIONS")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+		c.Writer.Header().Set("Access-Control-Expose-Headers", "Content-Length")
+		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(200)
+		} else {
+			c.Next()
+		}
+	}
+}
+
+// cognito user poolまたはgoogle+の認証したJWTのチェックを行う
+func authMiddleware(region, userPoolID string) gin.HandlerFunc {
+	// この部分はサーバー起動時に1度だけ実行される
+
+	// 1. Download and store the JSON Web Key (JWK) for your user pool.
+	jwkURL := fmt.Sprintf("https://cognito-idp.%v.amazonaws.com/%v/.well-known/jwks.json", region, userPoolID)
+	fmt.Println(jwkURL)
+	jwk := getJWK(jwkURL)
+
+	// googleのJWKも一括で管理して混ぜてしまう。どうせkidは被らない
+	for key, val := range getJWK("https://www.googleapis.com/oauth2/v3/certs") {
+		jwk[key] = val
+	}
+
+	fmt.Println(jwk)
+
+	// この部分はクライアント接続毎に実行される
+	return func(c *gin.Context) {
+		tokenString, ok := getBearer(c.Request.Header["Authorization"])
+
+		if !ok {
+			// jwtがHeaderに添付されていない
+			c.AbortWithStatusJSON(401, res{Text: "Authorization Bearer Header is missing"})
+			return
+		}
+
+		token, err := validateToken(tokenString, region, userPoolID, jwk)
+		if err != nil || !token.Valid {
+			// jwtの検証に失敗
+			fmt.Printf("token is not valid\n%v", err)
+			c.AbortWithStatusJSON(401, res{Text: fmt.Sprintf("token is not valid%v", err)})
+		} else {
+			// 認証したtokenを渡してやると、そこに含まれるユーザー情報を各リソースパスで利用できる
+			c.Set("token", token)
+			c.Next()
+		}
+	}
+}
+
+// Cognito User PoolのJWT検証は下記の手順を参照
+//https://docs.aws.amazon.com/cognito/latest/developerguide/amazon-cognito-user-pools-using-tokens-with-identity-providers.html#amazon-cognito-identity-user-pools-using-id-and-access-tokens-in-web-api
+
+// Google のJWT検証は下記の手順を参照
+// https://developers.google.com/identity/sign-in/web/backend-auth
+
 // validateAWSJwtClaims validates AWS Cognito User Pool JWT
-func validateAWSJwtClaims(claims jwt.MapClaims) error {
+func validateAWSJwtClaims(claims jwt.MapClaims, region, userPoolID string) error {
 	var err error
 	// 3. Check the iss claim. It should match your user pool.
 	issShoudBe := fmt.Sprintf("https://cognito-idp.%v.amazonaws.com/%v", region, userPoolID)
@@ -175,7 +212,7 @@ func validateExpired(claims jwt.MapClaims) error {
 	return errors.New("token is expired")
 }
 
-func validateToken(tokenStr string) (*jwt.Token, error) {
+func validateToken(tokenStr, region, userPoolID string, jwk map[string]JWKKey) (*jwt.Token, error) {
 
 	// 2. Decode the token string into JWT format.
 	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
@@ -212,7 +249,7 @@ func validateToken(tokenStr string) (*jwt.Token, error) {
 	issStr := iss.(string)
 	if strings.Contains(issStr, "cognito-idp") {
 		// 3. 4. 7.のチェックをまとめて
-		err = validateAWSJwtClaims(claims)
+		err = validateAWSJwtClaims(claims, region, userPoolID)
 		if err != nil {
 			return token, err
 		}
@@ -309,22 +346,4 @@ func convertKey(rawE, rawN string) *rsa.PublicKey {
 	// fmt.Println(decodedE)
 	// fmt.Printf("%#v\n", *pubKey)
 	return pubKey
-}
-
-// cors許可
-func corsMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		c.Writer.Header().Set("Access-Control-Max-Age", "86400")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, UPDATE, OPTIONS")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
-		c.Writer.Header().Set("Access-Control-Expose-Headers", "Content-Length")
-		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(200)
-		} else {
-			c.Next()
-		}
-	}
 }
