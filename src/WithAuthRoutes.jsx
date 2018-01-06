@@ -12,8 +12,7 @@ const WithAuth = withAuthenticator(
       <Route path={`${match.url}/api`} component={MemberAPI} />
       <Route component={NotFound} />
     </Switch>
-  ),
-  { includeGreetings: false }
+  )
 );
 
 // Cognito Federated IdentitiesでのGoogleとFacebook統合にしか上手く対応しないので今回は使わない

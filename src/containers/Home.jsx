@@ -6,8 +6,8 @@ export default class Home extends Component {
     return (
       <div className="Home">
         <div className="lander">
-          <h1>Cognito Sign-in Sample</h1>
-          <h2>Non Member Page</h2>
+          <h1>Non Member Page</h1>
+          <p>call API with test buttons below</p>
         </div>
         <APITest />
       </div>
