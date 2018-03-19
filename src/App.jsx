@@ -18,23 +18,31 @@ class App extends Component {
     };
   }
 
-  handleSignIn = (identityProvider) => () => {
-    const auth = GetCognitoAuth(identityProvider, () => {
-      this.updateAuthInfo();
-    }, () => {
-      this.updateAuthInfo();
-    });
+  handleSignIn = identityProvider => () => {
+    const auth = GetCognitoAuth(
+      identityProvider,
+      () => {
+        this.updateAuthInfo();
+      },
+      () => {
+        this.updateAuthInfo();
+      }
+    );
     auth.getSession();
-  }
+  };
 
   handleSignOut = () => {
-    const auth = GetCognitoAuth(null, () => {
-      this.updateAuthInfo();
-    }, () => {
-      this.updateAuthInfo();
-    });
+    const auth = GetCognitoAuth(
+      null,
+      () => {
+        this.updateAuthInfo();
+      },
+      () => {
+        this.updateAuthInfo();
+      }
+    );
     auth.signOut();
-  }
+  };
 
   async updateAuthInfo() {
     const info = await getAuthInfo();
@@ -63,41 +71,39 @@ class App extends Component {
             <Navbar.Brand>
               <Link to="/">Home</Link>
             </Navbar.Brand>
-            <Navbar.Toggle />
           </Navbar.Header>
-          <Navbar.Collapse>
-            {this.state.authenticated ? (
-              <Nav pullRight>
-                <RouteNavItem href="/a">
-                  Member Page{`(${this.state.username})`}
-                </RouteNavItem>
-              </Nav>
-            ) : (
-                <Nav pullRight>
-                  <RouteNavItem href="/a">Member Page</RouteNavItem>
-                </Nav>
-              )}
-          </Navbar.Collapse>
+          <Nav>
+            <RouteNavItem href="/cognitosetting">Cognito Setting</RouteNavItem>
+          </Nav>
+          <Nav pullRight>
+            <RouteNavItem href="/a">
+              Member Page{this.state.authenticated
+                ? `(${this.state.username})`
+                : ""}
+            </RouteNavItem>
+          </Nav>
         </Navbar>
-        {this.state.authenticated ?
+        {this.state.authenticated ? (
           <div className="buttons">
-          <button onClick={this.handleSignOut}>Sign Out</button>
+            <button onClick={this.handleSignOut}>Sign Out</button>
           </div>
-          : (
-            <div className="buttons">
-              {/* 
+        ) : (
+          <div className="buttons">
+            {/* 
                identity_providerに使える値
                Facebook, Google, LoginWithAmazon, 
                */}
-              <button onClick={this.handleSignIn("Google")}>Google Sign In</button>
-              <button onClick={this.handleSignIn("Facebook")}>Facebook Sign In</button>
-              <button onClick={this.handleSignIn("")}>Open Cognito User Pools Sign In Page</button>
-              {/* 参考リンク */}
-              {/* https://docs.aws.amazon.com/ja_jp/cognito/latest/developerguide/authorization-endpoint.html */}
-              <a href="https://fs-fish-test.auth.us-east-1.amazoncognito.com/authorize?response_type=code&client_id=21mafgufsmc9m94kp7jlqemp0d&identity_provider=Google&scope=openid+email+profile+aws.cognito.signin.user.admin" >Google+ Auth Link</a>
-            </div>
-          )
-        }
+            <button onClick={this.handleSignIn("Google")}>
+              Google Sign In
+            </button>
+            <button onClick={this.handleSignIn("Facebook")}>
+              Facebook Sign In
+            </button>
+            <button onClick={this.handleSignIn("")}>
+              Open Cognito User Pools Sign In Page
+            </button>
+          </div>
+        )}
         <Routes />
       </div>
     );
