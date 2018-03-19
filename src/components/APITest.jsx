@@ -84,7 +84,13 @@ export default class APITest extends Component {
     return (
       <div>
         <p>login Type: {this.state.loginType}</p>
-        <p>jwtToken: {this.state.jwtToken}</p>
+        <a
+          target="_blank"
+          href={`https://jwt.io/?token=${this.state.jwtToken}`}
+        >
+          Open idToken On jwt.io
+        </a>
+        <p>jwtToken(idToken): {this.state.jwtToken}</p>
         <button onClick={this.handlePublicAPICall}>
           http://localhost:3100/public
         </button>
