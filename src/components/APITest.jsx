@@ -48,7 +48,7 @@ export default class APITest extends Component {
 
   handleMemberAPICall = () => {
     Auth.currentSession()
-      .then(res => {
+      .then(() => {
         this.callMemberAPI();
       })
       .catch(err => {
