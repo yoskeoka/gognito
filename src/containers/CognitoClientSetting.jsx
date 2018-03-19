@@ -9,6 +9,8 @@ import {
   HelpBlock
 } from "react-bootstrap";
 
+// import { Panel } from "react-bootstrap/lib/Panel";
+
 import "./CognitoClientSetting.css";
 export default class CognitoClientSetting extends Component {
   constructor(props) {
@@ -108,6 +110,12 @@ export default class CognitoClientSetting extends Component {
               </Col>
             </FormGroup>
           </Form>
+          {/* <Panel bsStyle="info">
+            <Panel.Heading>
+              <Panel.Title componentClass="h3">Panel heading</Panel.Title>
+            </Panel.Heading>
+            <Panel.Body>Panel content</Panel.Body>
+          </Panel> */}
         </div>
       </div>
     );

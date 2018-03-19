@@ -73,9 +73,7 @@ class App extends Component {
             </Navbar.Brand>
           </Navbar.Header>
           <Nav>
-            <RouteNavItem href="/cognitosetting">
-              Cognito Setting
-            </RouteNavItem>
+            <RouteNavItem href="/cognitosetting">Cognito Setting</RouteNavItem>
           </Nav>
           <Nav pullRight>
             <RouteNavItem href="/a">
