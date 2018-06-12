@@ -17,10 +17,15 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test --env=jsdom",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "sync": "sls sync",
+    "deploy": "sls deploy -v"
   },
   "devDependencies": {
     "eslint": "^4.14.0",
-    "eslint-plugin-react": "^7.5.1"
+    "eslint-plugin-react": "^7.5.1",
+    "serverless": "^1.27.3",
+    "serverless-plugin-cloudfront-lambda-edge": "^2.0.0",
+    "serverless-s3-sync": "^1.6.1"
   }
 }

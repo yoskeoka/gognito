@@ -38,3 +38,6 @@ dep:
 
 clean:
 	-rm -rf $(DIST_DIR)/*
+
+deploy-web:
+	yarn run deploy
