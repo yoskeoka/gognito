@@ -1,4 +1,4 @@
-service: ${env:S3_BUCKET_NAME}
+service: gognito-website
 
 provider:
   name: aws
@@ -9,12 +9,16 @@ provider:
 
   environment:
     S3_BUCKET_NAME: ${env:S3_BUCKET_NAME}
+  
+  variableSyntax: "\\${(?!AWS::)([ :a-zA-Z0-9._,\\-\\/\\(\\)]+?)}"
 
 plugins:
   - serverless-plugin-cloudfront-lambda-edge
   - serverless-s3-sync
 
 custom:
+  region: ${opt:region, self:provider.region}
+  stage: ${opt:stage, self:provider.stage}
   s3Sync:
     - bucketName: ${env:S3_BUCKET_NAME}
       localDir: build
@@ -28,7 +32,7 @@ package:
 
 functions:
   basicAuth:
-    name: '${env:S3_BUCKET_NAME}-viewer-request'
+    name: gognito-website-basicAuth-${self:custom.stage}
     handler: handler.basicAuth
     memorySize: 128
     timeout: 1
@@ -36,112 +40,4 @@ functions:
       distribution: WebsiteDistribution
       eventType: 'viewer-request'
 
-resources:
-  AWSTemplateFormatVersion: "2010-09-09"
-  Description: gognito Lambda@Edge basic auth
-  
-  Parameters:
-    S3BucketName:
-      Type: String
-      Default: ${{env:S3_BUCKET_NAME}}
-    AcmIdentifier:
-      Type: String
-      Default: ${{env:ACM_IDENTIFIER}}
-    HostedZoneId:
-      Type: AWS::Route53::HostedZone::Id
-      Default: ${{env:HOSTED_ZONE_ID}}
-  Resources:
-    WebsiteBucket:
-      Type: AWS::S3::Bucket
-      Properties:
-        BucketName: ${env:S3_BUCKET_NAME}
-        AccessControl: Private
-        WebsiteConfiguration:
-          IndexDocument: index.html
-          ErrorDocument: error.html
-    WebsiteBucketPolicy:
-      Type: AWS::S3::BucketPolicy
-      Properties:
-        Bucket: { Ref: WebsiteBucket }
-        PolicyDocument:
-          Statement:
-            -
-              Action:
-                - "s3:GetObject"
-              Effect: Allow
-              Resource: { "Fn::Join" : ["", ["arn:aws:s3:::", { Ref : WebsiteBucket }, "/*" ] ]  }
-              Principal:
-                AWS: { "Fn::Join" : [" ", ["arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity", { Ref: WebsiteOriginAccessIdentity } ] ] }
-    WebsiteOriginAccessIdentity:
-      Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
-      Properties:
-        CloudFrontOriginAccessIdentityConfig:
-          Comment: "CloudFrontOriginAccessIdentity for ${self:service}-${self:provider.stage}"
-    WebsiteDistribution:
-      Type: AWS::CloudFront::Distribution
-      Properties:
-        DistributionConfig:
-          Enabled: true
-          Comment: 
-            !Ref AWS::StackName
-          PriceClass: 'PriceClass_200'
-          Aliases:
-            - Ref: S3BucketName
-          DefaultRootObject: 'index.html'
-          HttpVersion: 'http2'
-          ViewerCertificate:
-            SslSupportMethod: sni-only
-            AcmCertificateArn:
-              Fn::Sub: arn:aws:acm:${AWS::Region}:${AWS::AccountId}:certificate/${AcmIdentifier}
-          Origins:
-            -
-              Id: 
-                Fn::Sub: S3-${WebsiteBucket}
-              DomainName: { 'Fn::GetAtt': [ WebsiteBucket, DomainName ] }
-              S3OriginConfig:
-                OriginAccessIdentity: { "Fn::Join" : ["", ["origin-access-identity/cloudfront/", { Ref: WebsiteOriginAccessIdentity } ] ]  }
-          DefaultCacheBehavior:
-            AllowedMethods: [ "GET", "HEAD", "OPTIONS" ]
-            CachedMethods:  [ "GET", "HEAD", "OPTIONS" ]
-            TargetOriginId: WebsiteBucketOrigin
-            ViewerProtocolPolicy: redirect-to-https
-            DefaultTTL: 0
-            MaxTTL: 0
-            MinTTL: 0
-            Compress: true
-            ForwardedValues:
-              QueryString: true
-              Cookies:
-                Forward: 'all'
-          CustomErrorResponses:
-            -
-              ErrorCode: '400'
-              ErrorCachingMinTTL: 1
-            -
-              ErrorCode: '404'
-              ErrorCachingMinTTL: 1
-            -
-              ErrorCode: '500'
-              ErrorCachingMinTTL: 1
-            -
-              ErrorCode: '502'
-              ErrorCachingMinTTL: 1
-    WebSiteRecordSet:
-      Type: AWS::Route53::RecordSet
-      Properties:
-        HostedZoneId: 
-          !Ref HostedZoneId
-        Name: 
-          !Ref S3BucketName
-        Type: A
-        AliasTarget:
-          HostedZoneId: Z2FDTNDATAQYW2
-          DNSName:
-            Fn::GetAtt: [ WebsiteDistribution, DomainName ]
-  Outputs:
-    CloudFrontURL:
-      Value: { "Fn::Join" : ["", ["https://", { "Fn::GetAtt" : [ WebsiteDistribution, DomainName ] } ] ] }
-      Description: "URL for website via CloudFront"
-    WebSiteURL:
-      Value: { "Fn::Join" : ["", ["https://", !Ref S3BucketName ] ] }
-      Description: "URL for website via CloudFront"
+resources: ${file(./resources.yml)}

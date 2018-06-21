@@ -1,0 +1,724 @@
+{
+  "service": {
+    "service": "gognito-website",
+    "serviceObject": {
+      "name": "gognito-website"
+    },
+    "provider": {
+      "stage": "develop",
+      "region": "us-east-1",
+      "variableSyntax": "\\${(?!AWS::)([ :a-zA-Z0-9._,\\-\\/\\(\\)]+?)}",
+      "name": "aws",
+      "runtime": "nodejs8.10",
+      "environment": {
+        "S3_BUCKET_NAME": "gognito.gemcook.com"
+      },
+      "versionFunctions": true,
+      "remoteFunctionData": null,
+      "compiledCloudFormationTemplate": {
+        "AWSTemplateFormatVersion": "2010-09-09",
+        "Description": "gognito Lambda@Edge basic auth",
+        "Resources": {
+          "ServerlessDeploymentBucket": {
+            "Type": "AWS::S3::Bucket"
+          },
+          "BasicAuthLogGroup": {
+            "Type": "AWS::Logs::LogGroup",
+            "Properties": {
+              "LogGroupName": "/aws/lambda/gognito-website-basicAuth-develop"
+            }
+          },
+          "IamRoleLambdaExecution": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+              "AssumeRolePolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Allow",
+                    "Principal": {
+                      "Service": [
+                        "lambda.amazonaws.com",
+                        "edgelambda.amazonaws.com"
+                      ]
+                    },
+                    "Action": [
+                      "sts:AssumeRole"
+                    ]
+                  }
+                ]
+              },
+              "Policies": [
+                {
+                  "PolicyName": {
+                    "Fn::Join": [
+                      "-",
+                      [
+                        "develop",
+                        "gognito-website",
+                        "lambda"
+                      ]
+                    ]
+                  },
+                  "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "logs:CreateLogStream"
+                        ],
+                        "Resource": [
+                          {
+                            "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/gognito-website-basicAuth-develop:*"
+                          }
+                        ]
+                      },
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "logs:PutLogEvents"
+                        ],
+                        "Resource": [
+                          {
+                            "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/gognito-website-basicAuth-develop:*:*"
+                          }
+                        ]
+                      },
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "logs:CreateLogGroup",
+                          "logs:CreateLogStream",
+                          "logs:PutLogEvents",
+                          "logs:DescribeLogStreams"
+                        ],
+                        "Resource": "arn:aws:logs:*:*:*"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Path": "/",
+              "RoleName": {
+                "Fn::Join": [
+                  "-",
+                  [
+                    "gognito-website",
+                    "develop",
+                    "us-east-1",
+                    "lambdaRole"
+                  ]
+                ]
+              }
+            }
+          },
+          "BasicAuthLambdaFunction": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+              "Code": {
+                "S3Bucket": {
+                  "Ref": "ServerlessDeploymentBucket"
+                },
+                "S3Key": "serverless/gognito-website/develop/1529607651131-2018-06-21T19:00:51.131Z/gognito-website.zip"
+              },
+              "FunctionName": "gognito-website-basicAuth-develop",
+              "Handler": "handler.basicAuth",
+              "MemorySize": 128,
+              "Role": {
+                "Fn::GetAtt": [
+                  "IamRoleLambdaExecution",
+                  "Arn"
+                ]
+              },
+              "Runtime": "nodejs8.10",
+              "Timeout": 1
+            },
+            "DependsOn": [
+              "BasicAuthLogGroup",
+              "IamRoleLambdaExecution"
+            ]
+          },
+          "BasicAuthLambdaVersionPY9KgMW7y6HOIeAAjh82oIpa1VjSCD9l3b0czo8AM": {
+            "Type": "AWS::Lambda::Version",
+            "DeletionPolicy": "Retain",
+            "Properties": {
+              "FunctionName": {
+                "Ref": "BasicAuthLambdaFunction"
+              },
+              "CodeSha256": "EIywgxcoI9DAUGBTWtEFl699RV4lWmUURG4M6iMml3Y="
+            }
+          },
+          "WebsiteBucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+              "BucketName": "gognito.gemcook.com",
+              "AccessControl": "Private",
+              "WebsiteConfiguration": {
+                "IndexDocument": "index.html",
+                "ErrorDocument": "error.html"
+              }
+            }
+          },
+          "WebsiteBucketPolicy": {
+            "DependsOn": [
+              "WebsiteBucket",
+              "WebsiteOriginAccessIdentity"
+            ],
+            "Type": "AWS::S3::BucketPolicy",
+            "Properties": {
+              "Bucket": {
+                "Ref": "WebsiteBucket"
+              },
+              "PolicyDocument": {
+                "Statement": [
+                  {
+                    "Action": [
+                      "s3:GetObject"
+                    ],
+                    "Effect": "Allow",
+                    "Resource": {
+                      "Fn::Join": [
+                        "",
+                        [
+                          "arn:aws:s3:::",
+                          {
+                            "Ref": "WebsiteBucket"
+                          },
+                          "/*"
+                        ]
+                      ]
+                    },
+                    "Principal": {
+                      "AWS": {
+                        "Fn::Join": [
+                          " ",
+                          [
+                            "arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity",
+                            "WebsiteOriginAccessIdentity"
+                          ]
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "WebsiteOriginAccessIdentity": {
+            "Type": "AWS::CloudFront::CloudFrontOriginAccessIdentity",
+            "Properties": {
+              "CloudFrontOriginAccessIdentityConfig": {
+                "Comment": "CloudFrontOriginAccessIdentity for gognito-website-develop"
+              }
+            }
+          },
+          "WebsiteDistribution": {
+            "Type": "AWS::CloudFront::Distribution",
+            "DependsOn": [
+              "WebsiteBucketPolicy"
+            ],
+            "Properties": {
+              "DistributionConfig": {
+                "Enabled": true,
+                "Comment": {
+                  "Ref": "AWS::StackName"
+                },
+                "PriceClass": "PriceClass_200",
+                "Aliases": [
+                  {
+                    "Ref": "S3BucketName"
+                  }
+                ],
+                "DefaultRootObject": "index.html",
+                "HttpVersion": "http2",
+                "ViewerCertificate": {
+                  "SslSupportMethod": "sni-only",
+                  "AcmCertificateArn": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:aws:acm:${AWS::Region}:${AWS::AccountId}:certificate/",
+                        "AcmIdentifier"
+                      ]
+                    ]
+                  }
+                },
+                "Origins": [
+                  {
+                    "Id": {
+                      "Fn::Join": [
+                        "",
+                        [
+                          "S3-",
+                          "WebsiteBucket"
+                        ]
+                      ]
+                    },
+                    "DomainName": {
+                      "Fn::GetAtt": [
+                        "WebsiteBucket",
+                        "DomainName"
+                      ]
+                    },
+                    "S3OriginConfig": {
+                      "OriginAccessIdentity": {
+                        "Fn::Join": [
+                          "",
+                          [
+                            "origin-access-identity/cloudfront/",
+                            "WebsiteOriginAccessIdentity"
+                          ]
+                        ]
+                      }
+                    }
+                  }
+                ],
+                "DefaultCacheBehavior": {
+                  "AllowedMethods": [
+                    "GET",
+                    "HEAD",
+                    "OPTIONS"
+                  ],
+                  "CachedMethods": [
+                    "GET",
+                    "HEAD",
+                    "OPTIONS"
+                  ],
+                  "TargetOriginId": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "S3-",
+                        "WebsiteBucket"
+                      ]
+                    ]
+                  },
+                  "ViewerProtocolPolicy": "redirect-to-https",
+                  "DefaultTTL": 0,
+                  "MaxTTL": 0,
+                  "MinTTL": 0,
+                  "Compress": true,
+                  "ForwardedValues": {
+                    "QueryString": true,
+                    "Cookies": {
+                      "Forward": "all"
+                    }
+                  },
+                  "LambdaFunctionAssociations": [
+                    {
+                      "EventType": "viewer-request",
+                      "LambdaFunctionARN": {
+                        "Ref": "BasicAuthLambdaVersionPY9KgMW7y6HOIeAAjh82oIpa1VjSCD9l3b0czo8AM"
+                      }
+                    }
+                  ]
+                },
+                "CustomErrorResponses": [
+                  {
+                    "ErrorCode": "400",
+                    "ErrorCachingMinTTL": 1
+                  },
+                  {
+                    "ErrorCode": "404",
+                    "ErrorCachingMinTTL": 1
+                  },
+                  {
+                    "ErrorCode": "500",
+                    "ErrorCachingMinTTL": 1
+                  },
+                  {
+                    "ErrorCode": "502",
+                    "ErrorCachingMinTTL": 1
+                  }
+                ]
+              }
+            }
+          },
+          "WebSiteRecordSet": {
+            "Type": "AWS::Route53::RecordSet",
+            "Properties": {
+              "HostedZoneId": {
+                "Ref": "HostedZoneId"
+              },
+              "Name": {
+                "Ref": "S3BucketName"
+              },
+              "Type": "A",
+              "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": {
+                  "Fn::GetAtt": [
+                    "WebsiteDistribution",
+                    "DomainName"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "Outputs": {
+          "ServerlessDeploymentBucketName": {
+            "Value": {
+              "Ref": "ServerlessDeploymentBucket"
+            }
+          },
+          "BasicAuthLambdaFunctionQualifiedArn": {
+            "Description": "Current Lambda function version",
+            "Value": {
+              "Ref": "BasicAuthLambdaVersionPY9KgMW7y6HOIeAAjh82oIpa1VjSCD9l3b0czo8AM"
+            }
+          },
+          "CloudFrontURL": {
+            "Value": {
+              "Fn::Join": [
+                "",
+                [
+                  "https://",
+                  {
+                    "Fn::GetAtt": [
+                      "WebsiteDistribution",
+                      "DomainName"
+                    ]
+                  }
+                ]
+              ]
+            },
+            "Description": "URL for website via CloudFront"
+          },
+          "WebSiteURL": {
+            "Value": {
+              "Fn::Join": [
+                "",
+                [
+                  "https://",
+                  {
+                    "Ref": "S3BucketName"
+                  }
+                ]
+              ]
+            },
+            "Description": "URL for website via CloudFront"
+          }
+        },
+        "Parameters": {
+          "S3BucketName": {
+            "Type": "String",
+            "Default": "gognito.gemcook.com"
+          },
+          "AcmIdentifier": {
+            "Type": "String",
+            "Default": "82e8dde6-9030-416a-be1a-518ff3983b67"
+          },
+          "HostedZoneId": {
+            "Type": "AWS::Route53::HostedZone::Id",
+            "Default": "Z393W923TZ5OAI"
+          }
+        }
+      },
+      "coreCloudFormationTemplate": {
+        "AWSTemplateFormatVersion": "2010-09-09",
+        "Description": "The AWS CloudFormation template for this Serverless application",
+        "Resources": {
+          "ServerlessDeploymentBucket": {
+            "Type": "AWS::S3::Bucket"
+          }
+        },
+        "Outputs": {
+          "ServerlessDeploymentBucketName": {
+            "Value": {
+              "Ref": "ServerlessDeploymentBucket"
+            }
+          }
+        }
+      },
+      "vpc": {}
+    },
+    "custom": {
+      "region": "us-east-1",
+      "stage": "develop",
+      "s3Sync": [
+        {
+          "bucketName": "gognito.gemcook.com",
+          "localDir": "build"
+        }
+      ]
+    },
+    "plugins": [
+      "serverless-plugin-cloudfront-lambda-edge",
+      "serverless-s3-sync"
+    ],
+    "functions": {
+      "basicAuth": {
+        "name": "gognito-website-basicAuth-develop",
+        "handler": "handler.basicAuth",
+        "memorySize": 128,
+        "timeout": 1,
+        "lambdaAtEdge": {
+          "distribution": "WebsiteDistribution",
+          "eventType": "viewer-request"
+        },
+        "events": [],
+        "package": {},
+        "vpc": {}
+      }
+    },
+    "resources": {
+      "AWSTemplateFormatVersion": "2010-09-09",
+      "Description": "gognito Lambda@Edge basic auth",
+      "Parameters": {
+        "S3BucketName": {
+          "Type": "String",
+          "Default": "gognito.gemcook.com"
+        },
+        "AcmIdentifier": {
+          "Type": "String",
+          "Default": "82e8dde6-9030-416a-be1a-518ff3983b67"
+        },
+        "HostedZoneId": {
+          "Type": "AWS::Route53::HostedZone::Id",
+          "Default": "Z393W923TZ5OAI"
+        }
+      },
+      "Resources": {
+        "WebsiteBucket": {
+          "Type": "AWS::S3::Bucket",
+          "Properties": {
+            "BucketName": "gognito.gemcook.com",
+            "AccessControl": "Private",
+            "WebsiteConfiguration": {
+              "IndexDocument": "index.html",
+              "ErrorDocument": "error.html"
+            }
+          }
+        },
+        "WebsiteBucketPolicy": {
+          "DependsOn": [
+            "WebsiteBucket",
+            "WebsiteOriginAccessIdentity"
+          ],
+          "Type": "AWS::S3::BucketPolicy",
+          "Properties": {
+            "Bucket": {
+              "Ref": "WebsiteBucket"
+            },
+            "PolicyDocument": {
+              "Statement": [
+                {
+                  "Action": [
+                    "s3:GetObject"
+                  ],
+                  "Effect": "Allow",
+                  "Resource": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:aws:s3:::",
+                        {
+                          "Ref": "WebsiteBucket"
+                        },
+                        "/*"
+                      ]
+                    ]
+                  },
+                  "Principal": {
+                    "AWS": {
+                      "Fn::Join": [
+                        " ",
+                        [
+                          "arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity",
+                          "WebsiteOriginAccessIdentity"
+                        ]
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "WebsiteOriginAccessIdentity": {
+          "Type": "AWS::CloudFront::CloudFrontOriginAccessIdentity",
+          "Properties": {
+            "CloudFrontOriginAccessIdentityConfig": {
+              "Comment": "CloudFrontOriginAccessIdentity for gognito-website-develop"
+            }
+          }
+        },
+        "WebsiteDistribution": {
+          "Type": "AWS::CloudFront::Distribution",
+          "DependsOn": [
+            "WebsiteBucketPolicy"
+          ],
+          "Properties": {
+            "DistributionConfig": {
+              "Enabled": true,
+              "Comment": {
+                "Ref": "AWS::StackName"
+              },
+              "PriceClass": "PriceClass_200",
+              "Aliases": [
+                {
+                  "Ref": "S3BucketName"
+                }
+              ],
+              "DefaultRootObject": "index.html",
+              "HttpVersion": "http2",
+              "ViewerCertificate": {
+                "SslSupportMethod": "sni-only",
+                "AcmCertificateArn": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:aws:acm:${AWS::Region}:${AWS::AccountId}:certificate/",
+                      "AcmIdentifier"
+                    ]
+                  ]
+                }
+              },
+              "Origins": [
+                {
+                  "Id": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "S3-",
+                        "WebsiteBucket"
+                      ]
+                    ]
+                  },
+                  "DomainName": {
+                    "Fn::GetAtt": [
+                      "WebsiteBucket",
+                      "DomainName"
+                    ]
+                  },
+                  "S3OriginConfig": {
+                    "OriginAccessIdentity": {
+                      "Fn::Join": [
+                        "",
+                        [
+                          "origin-access-identity/cloudfront/",
+                          "WebsiteOriginAccessIdentity"
+                        ]
+                      ]
+                    }
+                  }
+                }
+              ],
+              "DefaultCacheBehavior": {
+                "AllowedMethods": [
+                  "GET",
+                  "HEAD",
+                  "OPTIONS"
+                ],
+                "CachedMethods": [
+                  "GET",
+                  "HEAD",
+                  "OPTIONS"
+                ],
+                "TargetOriginId": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "S3-",
+                      "WebsiteBucket"
+                    ]
+                  ]
+                },
+                "ViewerProtocolPolicy": "redirect-to-https",
+                "DefaultTTL": 0,
+                "MaxTTL": 0,
+                "MinTTL": 0,
+                "Compress": true,
+                "ForwardedValues": {
+                  "QueryString": true,
+                  "Cookies": {
+                    "Forward": "all"
+                  }
+                }
+              },
+              "CustomErrorResponses": [
+                {
+                  "ErrorCode": "400",
+                  "ErrorCachingMinTTL": 1
+                },
+                {
+                  "ErrorCode": "404",
+                  "ErrorCachingMinTTL": 1
+                },
+                {
+                  "ErrorCode": "500",
+                  "ErrorCachingMinTTL": 1
+                },
+                {
+                  "ErrorCode": "502",
+                  "ErrorCachingMinTTL": 1
+                }
+              ]
+            }
+          }
+        },
+        "WebSiteRecordSet": {
+          "Type": "AWS::Route53::RecordSet",
+          "Properties": {
+            "HostedZoneId": {
+              "Ref": "HostedZoneId"
+            },
+            "Name": {
+              "Ref": "S3BucketName"
+            },
+            "Type": "A",
+            "AliasTarget": {
+              "HostedZoneId": "Z2FDTNDATAQYW2",
+              "DNSName": {
+                "Fn::GetAtt": [
+                  "WebsiteDistribution",
+                  "DomainName"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "Outputs": {
+        "CloudFrontURL": {
+          "Value": {
+            "Fn::Join": [
+              "",
+              [
+                "https://",
+                {
+                  "Fn::GetAtt": [
+                    "WebsiteDistribution",
+                    "DomainName"
+                  ]
+                }
+              ]
+            ]
+          },
+          "Description": "URL for website via CloudFront"
+        },
+        "WebSiteURL": {
+          "Value": {
+            "Fn::Join": [
+              "",
+              [
+                "https://",
+                {
+                  "Ref": "S3BucketName"
+                }
+              ]
+            ]
+          },
+          "Description": "URL for website via CloudFront"
+        }
+      }
+    },
+    "artifact": "/home/yoske/src/github.com.gemcook/gcoka/gognito/.serverless/gognito-website.zip"
+  },
+  "package": {
+    "artifactDirectoryName": "serverless/gognito-website/develop/1529607651131-2018-06-21T19:00:51.131Z",
+    "artifact": "gognito-website.zip"
+  }
+}
