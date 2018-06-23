@@ -5,50 +5,53 @@ Description: gognito Lambda@Edge basic auth
 Parameters:
   S3BucketName:
     Type: String
-    Default: ${env:S3_BUCKET_NAME}
+    Default: ${{env:S3_BUCKET_NAME}}
   AcmIdentifier:
     Type: String
-    Default: ${env:ACM_IDENTIFIER}
+    Default: ${{env:ACM_IDENTIFIER}}
   HostedZoneId:
     Type: AWS::Route53::HostedZone::Id
-    Default: ${env:HOSTED_ZONE_ID}
+    Default: ${{env:HOSTED_ZONE_ID}}
 Resources:
   WebsiteBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: ${env:S3_BUCKET_NAME}
+      BucketName: 
+        Ref: S3BucketName
       AccessControl: Private
       WebsiteConfiguration:
         IndexDocument: index.html
         ErrorDocument: error.html
   WebsiteBucketPolicy:
-    DependsOn: 
+    Type: AWS::S3::BucketPolicy
+    DependsOn:
       - WebsiteBucket
       - WebsiteOriginAccessIdentity
-    Type: AWS::S3::BucketPolicy
     Properties:
-      Bucket: { Ref: WebsiteBucket }
+      Bucket: 
+        Ref: WebsiteBucket
       PolicyDocument:
         Statement:
           -
             Action:
               - "s3:GetObject"
             Effect: Allow
-            Resource: { Fn::Join : ["", ["arn:aws:s3:::", { Ref: WebsiteBucket }, "/*" ] ]  }
+            Resource: 
+              Fn::Sub: ${WebsiteBucket.Arn}/*
             Principal:
-              AWS: { Fn::Join : [" ", [
-                "arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity", 
-                WebsiteOriginAccessIdentity
-              ] ] }
+              AWS: 
+                Fn::Sub: "arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${WebsiteOriginAccessIdentity}"
   WebsiteOriginAccessIdentity:
     Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
     Properties:
       CloudFrontOriginAccessIdentityConfig:
-        Comment: "CloudFrontOriginAccessIdentity for ${self:service}-${self:provider.stage}"
+        Comment: 
+          Ref: WebsiteBucket
   WebsiteDistribution:
     Type: AWS::CloudFront::Distribution
     DependsOn: 
-      - WebsiteBucketPolicy
+      - WebsiteBucket
+      - WebsiteOriginAccessIdentity
     Properties:
       DistributionConfig:
         Enabled: true
@@ -62,22 +65,20 @@ Resources:
         ViewerCertificate:
           SslSupportMethod: sni-only
           AcmCertificateArn:
-            { Fn::Join: ["", [
-              "arn:aws:acm:${AWS::Region}:${AWS::AccountId}:certificate/",
-              AcmIdentifier
-            ]]}
+            Fn::Sub: "arn:aws:acm:${AWS::Region}:${AWS::AccountId}:certificate/${AcmIdentifier}"
         Origins:
-          - Id: {Fn::Join: ["", ["S3-", WebsiteBucket]]}
-            DomainName: { 'Fn::GetAtt': [ WebsiteBucket, DomainName ] }
+          - Id: 
+              Fn::Sub: S3-${WebsiteBucket}
+            DomainName: 
+              Fn::GetAtt: WebsiteBucket.DomainName
             S3OriginConfig:
-              OriginAccessIdentity: { Fn::Join : ["", [
-                  "origin-access-identity/cloudfront/", 
-                  WebsiteOriginAccessIdentity 
-                ] ]}
+              OriginAccessIdentity: 
+                Fn::Sub: "origin-access-identity/cloudfront/${WebsiteOriginAccessIdentity}"
         DefaultCacheBehavior:
           AllowedMethods: [ "GET", "HEAD", "OPTIONS" ]
           CachedMethods:  [ "GET", "HEAD", "OPTIONS" ]
-          TargetOriginId: {Fn::Join: ["", ["S3-", WebsiteBucket]]}
+          TargetOriginId: 
+            Fn::Sub: S3-${WebsiteBucket}
           ViewerProtocolPolicy: redirect-to-https
           DefaultTTL: 0
           MaxTTL: 0
@@ -113,9 +114,7 @@ Resources:
         DNSName:
           Fn::GetAtt: [ WebsiteDistribution, DomainName ]
 Outputs:
-  CloudFrontURL:
-    Value: { Fn::Join : ["", ["https://", { "Fn::GetAtt" : [ WebsiteDistribution, DomainName ] } ] ] }
-    Description: "URL for website via CloudFront"
   WebSiteURL:
-    Value: { Fn::Join : ["", ["https://", Ref: S3BucketName ] ] }
+    Value: 
+      Fn::Sub: https://${S3BucketName}
     Description: "URL for website via CloudFront"

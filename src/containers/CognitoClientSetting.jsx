@@ -9,6 +9,8 @@ import {
   HelpBlock
 } from "react-bootstrap";
 
+import Amplify from "aws-amplify";
+
 // import { Panel } from "react-bootstrap/lib/Panel";
 
 import "./CognitoClientSetting.css";
@@ -19,7 +21,7 @@ export default class CognitoClientSetting extends Component {
       region: localStorage.getItem("region") || "",
       userPoolId: localStorage.getItem("userPoolId") || "",
       appClientId: localStorage.getItem("appClientId") || "",
-      appClientDomain: localStorage.getItem("appClientDomain") || ""
+      poolDomain: localStorage.getItem("poolDomain") || ""
     };
   }
 
@@ -31,12 +33,25 @@ export default class CognitoClientSetting extends Component {
 
   handleSubmit = event => {
     event.preventDefault();
-    console.log(this.state);
-    const { region, userPoolId, appClientId, appClientDomain } = this.state;
+    const { region, userPoolId, appClientId, poolDomain } = this.state;
+
+    try {
+      Amplify.configure({
+        Auth: {
+          region: region,
+          userPoolId: userPoolId,
+          userPoolWebClientId: appClientId
+        }
+      });
+    } catch (e) {
+      console.error(e);
+      return;
+    }
+
     localStorage.setItem("region", region);
     localStorage.setItem("userPoolId", userPoolId);
     localStorage.setItem("appClientId", appClientId);
-    localStorage.setItem("appClientDomain", appClientDomain);
+    localStorage.setItem("poolDomain", poolDomain);
   };
 
   render() {
@@ -61,7 +76,7 @@ export default class CognitoClientSetting extends Component {
 
             <FormGroup controlId="formUserPoolId">
               <Col componentClass={ControlLabel} sm={2}>
-                UserPoolId
+                User Pool Id
               </Col>
               <Col sm={10}>
                 <FormControl
@@ -74,7 +89,7 @@ export default class CognitoClientSetting extends Component {
             </FormGroup>
             <FormGroup controlId="formAppClientId">
               <Col componentClass={ControlLabel} sm={2}>
-                AppClientId
+                App Client Id
               </Col>
               <Col sm={10}>
                 <FormControl
@@ -85,20 +100,21 @@ export default class CognitoClientSetting extends Component {
                 />
               </Col>
             </FormGroup>
-            <FormGroup controlId="formAppClientDomain">
+            <FormGroup controlId="formPoolDomain">
               <Col componentClass={ControlLabel} sm={2}>
-                AppClientDomain
+                Pool Domain
               </Col>
               <Col sm={10}>
                 <FormControl
                   type="text"
-                  value={this.state.appClientDomain || ""}
-                  placeholder="cognito user pool app client domain"
-                  onChange={this.handleChange("appClientDomain")}
+                  value={this.state.poolDomain || ""}
+                  placeholder="cognito user pool domain"
+                  onChange={this.handleChange("poolDomain")}
                 />
                 <HelpBlock>
-                  just input 'your-domain'.
-                  https://your-domain.auth.us-east-1.amazoncognito.com
+                  just input 'your-domain'. https://<span class="domain-text">
+                    your-domain
+                  </span>.auth.us-east-1.amazoncognito.com
                 </HelpBlock>
               </Col>
             </FormGroup>

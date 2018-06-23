@@ -11,3 +11,9 @@
 .Home .lander p {
   color: #999;
 }
+
+.domain-text {
+  font-weight: bold;
+  font-style: italic;
+  color: red;
+}

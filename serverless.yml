@@ -8,36 +8,38 @@ provider:
   region: us-east-1 # Lambda@Edge function must be us-east-1
 
   environment:
-    S3_BUCKET_NAME: ${env:S3_BUCKET_NAME}
-  
-  variableSyntax: "\\${(?!AWS::)([ :a-zA-Z0-9._,\\-\\/\\(\\)]+?)}"
+    S3_BUCKET_NAME: ${{env:S3_BUCKET_NAME}}
+  # avoid conflicts to CloudFormation variable syntax.
+  variableSyntax: "\\${{([ :a-zA-Z0-9._,\\-\\/\\(\\)]+?)}}"
 
 plugins:
   - serverless-plugin-cloudfront-lambda-edge
   - serverless-s3-sync
 
 custom:
-  region: ${opt:region, self:provider.region}
-  stage: ${opt:stage, self:provider.stage}
+  region: ${{opt:region, self:provider.region}}
+  stage: ${{opt:stage, self:provider.stage}}
   s3Sync:
-    - bucketName: ${env:S3_BUCKET_NAME}
+    - bucketName: ${{env:S3_BUCKET_NAME}}
       localDir: build
 
+# Lambda@Edge はソースコードのファイル容量制限が厳しいため、個別に必要なファイルを指定する
 package:
+  individually: true
   exclude:
-    - src/*
-    - test/*
-    - package.json
-    - README.md
+    - "**"
 
 functions:
   basicAuth:
-    name: gognito-website-basicAuth-${self:custom.stage}
+    name: gognito-website-basicAuth-${{self:custom.stage}}
     handler: handler.basicAuth
     memorySize: 128
     timeout: 1
     lambdaAtEdge:
       distribution: WebsiteDistribution
       eventType: 'viewer-request'
+    package:
+      include:
+        - ./handler.js
 
-resources: ${file(./resources.yml)}
+resources: ${{file(./resources.yml)}}

@@ -1,6 +1,7 @@
 const BASIC_AUTH_USERS = {
   gognito: "password",
-  user: "pass"
+  user: "pass",
+  user1: "pass1"
 };
 
 module.exports.basicAuth = (event, context, callback) => {
