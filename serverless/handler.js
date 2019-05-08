@@ -20,7 +20,14 @@ module.exports.addUserToGroup = (event, context, callback) => {
     .then(data => {
       // groupがなければ作成
       var groupName = data.UserPoolClient.ClientName;
-      getGroup(groupName, userPoolId).catch(() => {
+      getGroup(groupName, userPoolId).then(() => {
+        // groupにユーザー追加
+        adminAddUserToGroup(groupName, userPoolId, event.userName).catch(
+          err => {
+            throw err;
+          }
+        );
+      }).catch(() => {
         // getGroup失敗ならgroupが無いと判断して、新規作成
         createGroup(groupName, userPoolId, clientId)
           .then(() => {
