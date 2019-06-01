@@ -6,7 +6,7 @@
     "amazon-cognito-auth-js": "^1.2.3",
     "aws-amplify": "^0.4.6",
     "aws-amplify-react": "^0.1.52",
-    "axios": "^0.17.1",
+    "axios": "^0.18.1",
     "react": "^16.2.0",
     "react-bootstrap": "^0.31.5",
     "react-dom": "^16.2.0",
