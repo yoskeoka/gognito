@@ -1,14 +1,14 @@
-import React, { Component } from "react";
-import { Auth } from "aws-amplify";
-import axios from "axios";
-import { getAuthInfo } from "../helper";
+import React, {Component} from 'react';
+import {Auth} from 'aws-amplify';
+import axios from 'axios';
+import {getAuthInfo} from '../helper';
 export default class APITest extends Component {
   constructor(props) {
     super(props);
     this.state = {
       result: null,
-      loginType: "",
-      jwtToken: ""
+      loginType: '',
+      jwtToken: '',
     };
   }
 
@@ -18,28 +18,28 @@ export default class APITest extends Component {
       // cognito userpool
       const jwtToken = info.currentSession.idToken.jwtToken;
       console.log(jwtToken);
-      this.setState({ loginType: "Cognito UserPool", jwtToken });
+      this.setState({loginType: 'Cognito UserPool', jwtToken});
     } else if (info.currentCredentials) {
       // google, facebook
       const logins = info.currentCredentials.params.Logins;
-      if (logins["accounts.google.com"]) {
+      if (logins['accounts.google.com']) {
         this.setState({
-          loginType: "Google+",
-          jwtToken: logins["accounts.google.com"]
+          loginType: 'Google+',
+          jwtToken: logins['accounts.google.com'],
         });
-      } else if (logins["graph.facebook.com"]) {
+      } else if (logins['graph.facebook.com']) {
         this.setState({
-          loginType: "Facebook",
-          jwtToken: logins["graph.facebook.com"]
+          loginType: 'Facebook',
+          jwtToken: logins['graph.facebook.com'],
         });
       }
     }
   }
   handlePublicAPICall = () => {
     axios
-      .get("http://localhost:3100/public")
+      .get('http://localhost:3100/public')
       .then(res => {
-        this.setState({ result: res.data.text });
+        this.setState({result: res.data.text});
       })
       .catch(err => {
         this.showError(err);
@@ -59,15 +59,16 @@ export default class APITest extends Component {
 
   // dummy JWTは以下のURLで生成できるので、色々と値を変更してチェックが正しいか確かめることが出来る。
   // https://jwt.io/
-  dummyJwt = "eyJraWQiOiJEVU1NWSIsImFsZyI6IlJTMjU2In0.eyJzdWIiOiJlN2U3MmFjNy01ZWQ1LTRjMzktYThjMC0wMDAwMDAwMDAwMDAiLCJhdWQiOiIyMW1hZmd1ZnNtYzkwMDAwMDAwMDAwMDAwIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImV2ZW50X2lkIjoiZDhhYTIyNzYtZjE2Yy0xMWU3LWFhZDctMDAwMDAwMDAwMDAwIiwidG9rZW5fdXNlIjoiaWQiLCJhdXRoX3RpbWUiOjE1MTUwODM1NDUsImlzcyI6Imh0dHBzOi8vY29nbml0by1pZHAudXMtZWFzdC0xLmFtYXpvbmF3cy5jb20vdXMtZWFzdC0xX1ZwRmI0VTlNTSIsImNvZ25pdG86dXNlcm5hbWUiOiJlN2U3MmFjNy01ZWQ1LTRjMzktYThjMC14eHh4eHh4eHh4eHgiLCJleHAiOjE2NjUwODcxNDUsImlhdCI6MTUxNTA4MzU0NSwiZW1haWwiOiJkdW1teUBnZW1jb29rLmNvbSJ9.QFo6MBcE9GHcilnetaldEvO5qnwxg1tpBW5bKIontjg-K3GzAwzGBmKitQfakHYuQJ2XIuLcikKFXOFgGaFlY3kgtY06r93Ju0P_kN5DX7EomVNmvJlG9Y1h7kEZtytMDsq6zK8V7sp-w-rZIuC4XhLf1tIvz-6cWny2oTpOH6U";
+  dummyJwt =
+    'eyJraWQiOiJEVU1NWSIsImFsZyI6IlJTMjU2In0.eyJzdWIiOiJlN2U3MmFjNy01ZWQ1LTRjMzktYThjMC0wMDAwMDAwMDAwMDAiLCJhdWQiOiIyMW1hZmd1ZnNtYzkwMDAwMDAwMDAwMDAwIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImV2ZW50X2lkIjoiZDhhYTIyNzYtZjE2Yy0xMWU3LWFhZDctMDAwMDAwMDAwMDAwIiwidG9rZW5fdXNlIjoiaWQiLCJhdXRoX3RpbWUiOjE1MTUwODM1NDUsImlzcyI6Imh0dHBzOi8vY29nbml0by1pZHAudXMtZWFzdC0xLmFtYXpvbmF3cy5jb20vdXMtZWFzdC0xX1ZwRmI0VTlNTSIsImNvZ25pdG86dXNlcm5hbWUiOiJlN2U3MmFjNy01ZWQ1LTRjMzktYThjMC14eHh4eHh4eHh4eHgiLCJleHAiOjE2NjUwODcxNDUsImlhdCI6MTUxNTA4MzU0NSwiZW1haWwiOiJkdW1teUBnZW1jb29rLmNvbSJ9.QFo6MBcE9GHcilnetaldEvO5qnwxg1tpBW5bKIontjg-K3GzAwzGBmKitQfakHYuQJ2XIuLcikKFXOFgGaFlY3kgtY06r93Ju0P_kN5DX7EomVNmvJlG9Y1h7kEZtytMDsq6zK8V7sp-w-rZIuC4XhLf1tIvz-6cWny2oTpOH6U';
   callMemberAPI() {
     const jwt = this.state.jwtToken ? this.state.jwtToken : this.dummyJwt;
     const bearer = `Bearer ${jwt}`;
-    const headers = { Authorization: bearer };
+    const headers = {Authorization: bearer};
     axios
-      .get("http://localhost:3100/member", { headers })
+      .get('http://localhost:3100/member', {headers})
       .then(res => {
-        this.setState({ result: res.data.text });
+        this.setState({result: res.data.text});
       })
       .catch(err => {
         this.showError(err);
@@ -75,9 +76,9 @@ export default class APITest extends Component {
   }
   showError(err) {
     if (err.response) {
-      this.setState({ result: err.response.data.text });
+      this.setState({result: err.response.data.text});
     } else {
-      this.setState({ result: err.message });
+      this.setState({result: err.message});
     }
   }
   render() {
@@ -86,6 +87,7 @@ export default class APITest extends Component {
         <p>login Type: {this.state.loginType}</p>
         <a
           target="_blank"
+          rel="noopener noreferrer"
           href={`https://jwt.io/?token=${this.state.jwtToken}`}
         >
           Open idToken On jwt.io
